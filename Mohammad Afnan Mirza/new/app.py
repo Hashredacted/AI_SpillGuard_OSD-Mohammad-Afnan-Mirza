@@ -1,83 +1,214 @@
+# app.py
 import streamlit as st
 import numpy as np
-import tensorflow as tf
+import pandas as pd
 from PIL import Image
+import tensorflow as tf
+from tensorflow.keras.models import load_model
+import io
+import warnings
 
-# Load Model
+# Suppress warnings
+warnings.filterwarnings('ignore')
+
+# Set page configuration
+st.set_page_config(
+    page_title="Oil Spill Segmentation",
+    page_icon="🛢️",
+    layout="wide"
+)
+
+# Constants
+COLOR_MAP = [
+    [0, 0, 0], [0, 255, 255], [255, 0, 0], [153, 76, 0], [0, 153, 0]
+]
+
+CLASS_NAMES = ["Background", "Oil Spill", "Ship", "Land", "Vegetation"]
+
 @st.cache_resource
-def load_unet():
-    return tf.keras.models.load_model("unet_model.keras")
+def load_model_cached():
+    """Load the trained U-Net model"""
+    try:
+        return load_model("unet_model.keras")
+    except:
+        st.error("Could not load model. Ensure 'unet_model.keras' is in the directory.")
+        return None
 
-unet_model = load_unet()
-
-# Get model input shape dynamically (batch, H, W, C)
-input_shape = unet_model.input_shape[1:3]  # (H, W)
-IMG_SIZE = (input_shape[1], input_shape[0])  # (width, height) for PIL
-
-st.title("🌊 Oil Spill Detection & Segmentation")
-st.write("Upload an image → classify (Spill / No Spill) → generate segmentation mask.")
-
-
-# Threshold slider
-
-threshold_percent = st.slider(
-    "Spill Threshold (% of pixels)", 
-    min_value=1, 
-    max_value=60, 
-    value=25, 
-    step=1, 
-    help="Minimum % of pixels predicted as spill to classify as SPILL"
-) / 100.0  # convert % to fraction
-
-
-# Upload Image
-
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
-
-if uploaded_file is not None:
-    # Load image
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded Image", use_column_width=True)
-
+def preprocess_image(image):
+    """Preprocess image for model input"""
+    # Convert to RGB if needed
+    if image.mode != 'RGB':
+        image = image.convert('RGB')
     
-    # Preprocess
-    
-    img_resized = image.resize(IMG_SIZE)  # must match model input
-    img_array = np.array(img_resized) / 255.0
-    img_batch = np.expand_dims(img_array, axis=0)  # (1, H, W, C)
+    # Resize and normalize
+    image_resized = np.array(image.resize((256, 256)))
+    image_normalized = image_resized / 255.0
+    return np.expand_dims(image_normalized, axis=0), image_resized
 
+def postprocess_mask(prediction):
+    """Convert model prediction to mask"""
+    mask = np.argmax(prediction, axis=-1)
+    colored_mask = np.zeros((*mask.shape, 3), dtype=np.uint8)
     
-    # Segmentation
+    for class_idx, color in enumerate(COLOR_MAP):
+        colored_mask[mask == class_idx] = color
     
-    pred_mask = unet_model.predict(img_batch)[0]
+    return mask[0], colored_mask[0]
 
-    if pred_mask.shape[-1] == 1:  # binary segmentation
-        pred_mask = (pred_mask[..., 0] > 0.5).astype(np.uint8)
-    else:  # multi-class segmentation
-        pred_mask = np.argmax(pred_mask, axis=-1).astype(np.uint8)
-
-    
-    # Classification (based on mask ratio)
-    
-    total_pixels = pred_mask.size
-    spill_pixels = np.sum(pred_mask)
-    spill_ratio = spill_pixels / total_pixels
-
-    if spill_ratio > threshold_percent:
-        label = "Spill"
+def create_simple_overlay(original, mask):
+    """Simple overlay using PIL"""
+    if isinstance(mask, np.ndarray):
+        mask_pil = Image.fromarray(mask)
     else:
-        label = "No Spill"
-
-    st.subheader("🟢 Classification Result")
-    st.write(f"**Prediction:** {label}")
-    st.write(f"Spill ratio: {spill_ratio*100:.2f}% (threshold: {threshold_percent*100:.2f}%)")
-
+        mask_pil = mask
     
-    # Show Segmentation
+    # Resize original to match mask size (256x256)
+    original_resized = original.resize((256, 256))
     
-    if label == "Spill":
-        st.subheader("🟡 Segmentation Mask")
-        st.image(pred_mask * 255, caption="Predicted Spill Region", use_column_width=True)
-    else:
-        st.info("No spill detected → skipping segmentation mask.")
+    # Create overlay by blending
+    overlay = Image.blend(original_resized.convert('RGBA'), 
+                         mask_pil.convert('RGBA'), 
+                         alpha=0.5)
+    
+    return overlay.convert('RGB')
 
+def pil_to_bytes(image):
+    """Convert PIL image to bytes for download"""
+    img_byte_arr = io.BytesIO()
+    image.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+    return img_byte_arr
+
+def main():
+    st.title("🛢️ Oil Spill Segmentation")
+    st.write("Upload a satellite image to detect oil spills and other features.")
+    
+    # Model loading
+    model = load_model_cached()
+    if model is None:
+        return
+    
+    # File upload
+    uploaded_file = st.file_uploader("Choose image", type=['jpg', 'jpeg', 'png', 'tif', 'tiff'])
+    
+    if uploaded_file is not None:
+        try:
+            # Load image
+            image = Image.open(uploaded_file)
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.subheader("Original Image")
+                st.image(image, use_container_width=True)
+            
+            # Process image
+            with st.spinner("Analyzing image..."):
+                processed, image_resized = preprocess_image(image)
+                prediction = model.predict(processed, verbose=0)
+                class_mask, colored_mask = postprocess_mask(prediction)
+            
+            # Convert to PIL images for display and download
+            mask_pil = Image.fromarray(colored_mask)
+            overlay = create_simple_overlay(image, colored_mask)
+            
+            # Display results
+            with col2:
+                st.subheader("Segmentation Mask")
+                st.image(mask_pil, use_container_width=True)
+                
+                st.subheader("Overlay")
+                st.image(overlay, use_container_width=True)
+            
+            # Analysis
+            st.subheader("Analysis")
+            total_pixels = class_mask.size
+            
+            # Calculate all class percentages
+            class_percentages = []
+            for i in range(5):
+                class_pixels = np.sum(class_mask == i)
+                percentage = (class_pixels / total_pixels) * 100
+                class_percentages.append(percentage)
+            
+            oil_percent = class_percentages[1]
+            
+            # Overall metrics
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Total Pixels", f"{total_pixels:,}")
+            col2.metric("Oil Spill Coverage", f"{oil_percent:.2f}%")
+            
+            with col3:
+                if oil_percent > 5:
+                    st.error("🚨 Major oil spill detected!")
+                elif oil_percent > 1:
+                    st.warning("⚠️ Significant oil spill detected")
+                elif oil_percent > 0.1:
+                    st.info("ℹ️ Minor oil spill detected")
+                else:
+                    st.success("✅ No significant oil spill detected")
+            
+            # Detailed class breakdown
+            st.subheader("Detailed Class Analysis")
+            
+            # Create a clean table for class distribution
+            class_data = []
+            for idx, (class_name, color) in enumerate(zip(CLASS_NAMES, COLOR_MAP)):
+                pixels = np.sum(class_mask == idx)
+                percentage = class_percentages[idx]
+                class_data.append({
+                    'Class': class_name,
+                    'Pixels': f"{pixels:,}",
+                    'Percentage': f"{percentage:.2f}%",
+                    'Color': f"rgb({color[0]}, {color[1]}, {color[2]})"
+                })
+            
+            # Display as metrics in columns
+            st.write("**Class Distribution:**")
+            metric_cols = st.columns(5)
+            for idx, data in enumerate(class_data):
+                with metric_cols[idx]:
+                    # Create color swatch
+                    color_array = np.full((30, 30, 3), COLOR_MAP[idx], dtype=np.uint8)
+                    st.image(color_array, use_container_width=True)
+                    st.metric(
+                        label=data['Class'],
+                        value=data['Percentage'],
+                        help=f"{data['Pixels']} pixels"
+                    )
+            
+            # Optional: Display as table
+            with st.expander("View Detailed Table"):
+                df = pd.DataFrame(class_data)
+                st.dataframe(df[['Class', 'Pixels', 'Percentage']], use_container_width=True)
+            
+            # Download options
+            st.subheader("Download Results")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                mask_bytes = pil_to_bytes(mask_pil)
+                st.download_button(
+                    "📥 Download Mask",
+                    data=mask_bytes,
+                    file_name="segmentation_mask.png",
+                    mime="image/png",
+                    use_container_width=True
+                )
+            
+            with col2:
+                overlay_bytes = pil_to_bytes(overlay)
+                st.download_button(
+                    "📥 Download Overlay", 
+                    data=overlay_bytes,
+                    file_name="segmentation_overlay.png",
+                    mime="image/png",
+                    use_container_width=True
+                )
+                
+        except Exception as e:
+            st.error(f"Error processing image: {str(e)}")
+            st.info("Try uploading a different image format (JPEG or PNG recommended)")
+
+if __name__ == "__main__":
+    main()
