@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -211,4 +210,5 @@ def main():
             st.info("Try uploading a different image format (JPEG or PNG recommended)")
 
 if __name__ == "__main__":
+
     main()
