@@ -7,8 +7,6 @@ from tensorflow.keras.models import load_model
 import io
 import warnings
 import os
-print("Current working directory:", os.getcwd())
-print("Files in cwd:", os.listdir())
 
 
 
@@ -220,6 +218,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
