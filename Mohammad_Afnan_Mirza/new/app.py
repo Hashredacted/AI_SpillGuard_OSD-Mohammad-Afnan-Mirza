@@ -9,7 +9,6 @@ import warnings
 import os
 print("Current working directory:", os.getcwd())
 print("Files in cwd:", os.listdir())
-print("Files in ./new:", os.listdir("new"))
 
 
 
@@ -221,6 +220,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
