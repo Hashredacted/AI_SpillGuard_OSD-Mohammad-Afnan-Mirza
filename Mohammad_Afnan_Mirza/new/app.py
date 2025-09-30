@@ -30,15 +30,17 @@ COLOR_MAP = [
 
 CLASS_NAMES = ["Background", "Oil Spill", "Ship", "Land", "Vegetation"]
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "unet_model.keras")
 
 @st.cache_resource
 def load_model_cached():
-    """Load the trained U-Net model"""
     try:
-        return load_model("new/unet_model.keras") #replace with actual path
-    except:
-        st.error("Could not load model. Ensure 'unet_model.keras' is in the directory.")
+        return load_model(MODEL_PATH)
+    except Exception as e:
+        st.error(f"Could not load model: {e}")
         return None
+
 
 def preprocess_image(image):
     """Preprocess image for model input"""
@@ -219,6 +221,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
