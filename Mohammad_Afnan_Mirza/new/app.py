@@ -7,6 +7,10 @@ from tensorflow.keras.models import load_model
 import io
 import warnings
 import os
+print("Current working directory:", os.getcwd())
+print("Files in cwd:", os.listdir())
+print("Files in ./new:", os.listdir("new"))
+
 
 
 # Suppress warnings
@@ -27,14 +31,11 @@ COLOR_MAP = [
 CLASS_NAMES = ["Background", "Oil Spill", "Ship", "Land", "Vegetation"]
 
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "unet_model.keras")
-
-
 @st.cache_resource
 def load_model_cached():
     """Load the trained U-Net model"""
     try:
-        return load_model("MODEL_PATH") #replace with actual path
+        return load_model("new/unet_model.keras") #replace with actual path
     except:
         st.error("Could not load model. Ensure 'unet_model.keras' is in the directory.")
         return None
@@ -218,6 +219,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
