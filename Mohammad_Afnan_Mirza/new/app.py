@@ -25,7 +25,7 @@ COLOR_MAP = [
     [0, 0, 0], [0, 255, 255], [255, 0, 0], [153, 76, 0], [0, 153, 0]
 ]
 
-CLASS_NAMES = ["Background", "Oil Spill", "Ship", "Land", "Vegetation"]
+CLASS_NAMES = ["Background", "Oil Spill", "Vegetation", "Ship", "Land"]
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "unet_model.keras")
@@ -218,6 +218,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
