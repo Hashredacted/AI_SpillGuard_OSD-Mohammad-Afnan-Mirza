@@ -28,7 +28,8 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Access the web interface at [StreamLit App](https://aispillguardosd-mohammad-afnan-mirza-ab7rbxck5ehj68knalfegk.streamlit.app/)
+Access the web interface at: <br><br>
+[![Open in Streamlit](https://img.shields.io/badge/Open%20in-Streamlit-FF4B4B?logo=streamlit&style=for-the-badge)]([https://share.streamlit.io/yourusername/yourapp](https://aispillguardosd-mohammad-afnan-mirza-ab7rbxck5ehj68knalfegk.streamlit.app/))
 
 ## 📁 Project Structure
 
@@ -214,4 +215,5 @@ For questions or support:
 ---
 
 *Last updated: March 2024*
+
 
