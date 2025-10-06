@@ -34,9 +34,9 @@ Access the web interface at: <br><br>
 ## 📁 Project Structure
 
 ```
-AI_SpillGuard/
+AI_SpillGuard/Mohammad_Afnan_Mirza/
 │
-├── 📊 Mohammad_Afnan_Mirza/     # Developer workspace
+├── 📊 new                     # Developer workspace
 │   ├── U_Net.ipynb             # U-Net model implementation
 │   ├── app.py                  # Streamlit application
 │   ├── requirements.txt        # Dependencies
@@ -215,6 +215,7 @@ For questions or support:
 ---
 
 *Last updated: October 2025*
+
 
 
 
