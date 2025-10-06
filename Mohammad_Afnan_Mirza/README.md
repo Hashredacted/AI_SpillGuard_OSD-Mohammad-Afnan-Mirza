@@ -85,6 +85,8 @@ The system uses a **U-Net architecture** with the following components:
 
 ## 📊 Dataset Information
 
+Kaggle Dataset [![Kaggle](https://img.shields.io/badge/Kaggle-Explore-blue?logo=kaggle)](https://www.kaggle.com/datasets/nabilsherif/oil-spill)
+
 ### 🗂️ Dataset Structure
 The project uses the **Oil Spill Detection Dataset** containing:
 - 1000+ satellite images with pixel-level annotations
@@ -212,3 +214,4 @@ For questions or support:
 ---
 
 *Last updated: March 2024*
+
