@@ -178,7 +178,7 @@ We welcome contributions! Please:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/hashredacted/ai_spillguard_osd-mohammad-afnan-mirza/blob/main/LICENSE) file for details.
 
 ## 👨‍💻 Developer
 
